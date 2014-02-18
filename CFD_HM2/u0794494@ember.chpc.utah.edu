@@ -1,0 +1,139 @@
+/*
+ * Assign2.cpp
+ *
+ *  Created on: Feb 6, 2014
+ *      Author: Abhishek Bagusetty
+ */
+
+// Boost includes
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <iostream.h>
+#include <math.h>
+using std::cout;
+using std::endl;
+
+  int i,j;
+  float alpha = 1.1234e-4;   // const thermal diffusivity
+  float Lx = 0.3, Ly = 0.4;  // Length of Grid in x & y direction
+  int Nx = 5, Ny = 5;      // No of Grid Points in x & y direction
+  float delx = Lx/Nx;
+  float dely = Ly/Ny;
+  float delt = 0.1; // seconds
+
+  // Solving AT == rhs matrix
+int main( int argc, char* argv[] ){
+
+  float T[Ny][Nx];
+
+  // Initialize the matrix
+  for( j = 0; j<Ny; j++){
+    for( i = 0; i < Nx; i++ ){
+      T[j][i] = 0.0;
+    }
+  }
+
+  // For boundary conditions
+  for( i = 0; i < Nx; i++ ){
+    T[0][i] = 10.0;    // Top
+    T[Ny-1][i] = 40.0; // bottom
+  }
+  for( j = 0; j < Ny-2; j++ ){
+    T[j+1][0]    = 0.0;  // Left
+    T[j+1][Nx-1] = 0.0;  // Right
+  }
+
+#ifdef NDEBUG
+  for( j = 0; j<Ny; j++){
+    for( i = 0; i < Nx; i++ ){
+      std::cout << T[j][i] << " ";
+    }
+    cout << endl;
+  }
+#endif
+
+for( double t = 0; t < 1; t += 0.1 ){
+  std::cout << "value of t : " << t << std::endl;
+//  float *rhs = new float[Ny-2];
+//  float *a   = new float[Ny-2];
+//  float *b   = new float[Ny-2];
+//  float *c   = new float[Ny-2];
+//  float *output = new float[Ny-2];
+  float rhs[Ny-2];
+  float a[Ny-2];
+  float b[Ny-2];
+  float c[Ny-2];
+  float output[Ny-2];
+
+  float ky =  (alpha*delt)/(2*dely*dely);
+
+  float kx = -(alpha*delt)/(2*delx*delx);
+  std::cout << "ky value : " << ky << std::endl;
+  std::cout << "kx value : " << kx << std::endl;
+
+  for( i = 1; i < Nx-1; i++ ){   // x sweep (columns)
+    for( j = 1; j < Ny-1; j++ ){ // y sweep (rows)
+
+      rhs[j] = (ky)*T[j][i-1] + (1-(2*ky))*T[j][i] + (ky)*T[j][i+1];
+
+      a[j] = kx*T[j-1][i];       // sub diagonal
+      b[j] = (1-(2*kx))*T[j][i]; // main diagonal
+      c[j] = kx*T[j+1][i];       // super diagonal
+    }
+    std::cout << "value of a : "<< a[j] << std::endl;
+    std::cout << "value of b : "<< b[j] << std::endl;
+    std::cout << "value of c : "<< c[j] << std::endl;
+
+
+    //std::cout << "1. Infinite Loop start \n";
+    // Thomas Algorithm Implementation
+    for( int k = 1; k < Ny; k++ ){ //Ny is no of unknowns
+      float m = a[k]/b[k-1];
+      b[k] = b[k] - m * c[k-1];
+      rhs[k] = rhs[k] - m*rhs[k-1];
+    }
+    //std::cout << "2. Infinite Loop start \n";
+    output[Ny-1] = rhs[Ny-1]/b[Ny-1];
+    //std::cout << "3. Infinite Loop start \n";
+    for( int k = Ny-2; k >= 1; k-- ){
+//      std::cout << "value of k : " << k << std::endl;
+      output[k] = (rhs[k] - c[k] * output[i+1]) / b[k];
+    }
+    //std::cout << "4. Infinite Loop start \n";
+    for( int k = 1; k < Ny; k++ ){
+      //std::cout << "value of output : " << output[k] << " " << k << std::endl;
+      T[j][k] = output[k];
+    }
+    //std::cout << "5. Infinite Loop end \n";
+
+  } // i loop
+
+//  delete[] rhs;
+//  delete[] a;
+//  delete[] b;
+//  delete[] c;
+//  delete[] output;
+  //std::cout << "out of the time loop \n";
+  for( j = 0; j<Ny; j++){
+    for( i = 0; i < Nx; i++ ){
+      std::cout << T[j][i] << " ";
+    }
+    cout << endl;
+  }
+} // time loop
+
+//std::cout << "New Matrix \n";
+
+
+
+//  for(int i=0; i<Nx; i++)    //This loops on the rows.
+//          {
+//                  for(int j=0; j<Ny; j++) //This loops on the columns
+//                  {
+//                          cout << T[j][i]  << "  ";
+//                  }
+//                  cout << endl;
+//          }
+
+} // main
+//}
